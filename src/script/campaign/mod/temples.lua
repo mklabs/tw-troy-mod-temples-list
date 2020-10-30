@@ -1,4 +1,4 @@
-local debug = require("tw-debug")("mk:temples:mod")
+local debug = require("temples/lib/tw-debug")("mk:temples:mod")
 
 -- workaround to get core object accessible in required ui file
 _G.core = core;

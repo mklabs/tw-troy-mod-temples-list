@@ -1,5 +1,9 @@
-local debug = require("tw-debug")("mk:temples:ui")
+local debug = require("temples/lib/tw-debug")("mk:temples:ui")
 local data = require("temples/data")
+local utils = require("temples/utils")
+local split = utils.split
+local trim = utils.trim
+local _ = utils._
 
 local ui = {}
 
@@ -11,49 +15,6 @@ local HEIGHT_THRESHOLD = 450
 
 local templesDropdownUIC = nil
 local bottomWidgetUIC = nil
-
-local function trim(s)
-    return s:match'^%s*(.*%S)' or ''
-end
-
-local function split(str, delim, maxNb)
-    -- Eliminate bad cases...
-    if string.find(str, delim) == nil then
-       return { str }
-    end
-    if maxNb == nil or maxNb < 1 then
-       maxNb = 0    -- No limit
-    end
-    local result = {}
-    local pat = "(.-)" .. delim .. "()"
-    local nb = 0
-    local lastPos
-    for part, pos in string.gfind(str, pat) do
-       nb = nb + 1
-       result[nb] = part
-       lastPos = pos
-       if nb == maxNb then
-          break
-       end
-    end
-    -- Handle the last field
-    if nb ~= maxNb then
-       result[nb + 1] = string.sub(str, lastPos)
-    end
-    return result
-end
-
--- little helper to query UIComponent a little bit easier
-local function _(path)
-    path = trim(path)
-    local str = string.gsub(path, "%s*root%s*>%s+", "")
-    local args = split(str, ">")
-    for k, v in pairs(args) do
-        args[k] = trim(v)
-    end
-    return find_uicomponent(core:get_ui_root(), unpack(args))
-end
-
 
 function ui.destroyComponent(component)
     if not component then
@@ -74,7 +35,7 @@ end
 function ui.selectSettlement(id)
     local uic = find_uicomponent(core:get_ui_root(), "layout", "dropdown_parent_2", "regions_dropdown", "panel", "panel_clip", "listview", "list_clip", "list_box", "player_provinces", "list_box", "row_entry_" .. id)
     if not uic then
-        debug("Cannot find entry " .. id)
+        debug("selectSettlement: Cannot find entry " .. id)
         return
     end
 
@@ -101,7 +62,6 @@ function ui.createRowUIC(temple, parentId, options)
     end
 
     if not rowToCopy then
-        debug("crap")
         return
     end
 
@@ -162,8 +122,6 @@ end
 
 function ui.registerRowClickListener(row)
     local province = row:GetProperty("province")
-    debug("registerRowClickListener", row:Id(), province)
-
     local listener = "mk_ui_" .. province .. "_click_listener"
     row:SetProperty("listener", listener)
 
@@ -173,7 +131,6 @@ function ui.registerRowClickListener(row)
         "ComponentLClickUp",
         function(context) return row == UIComponent(context.component) end,
         function(context)
-            debug("Clicked on", province)
             ui.selectSettlement(province)
         end,
         true
@@ -181,8 +138,6 @@ function ui.registerRowClickListener(row)
 end
 
 function ui.buildTemplesDropdownUIC()
-    debug("buildTemplesDropdownUIC")
-
     local parent = find_uicomponent(core:get_ui_root(), "layout", "dropdown_parent_2")
     local regionsDropdown = find_uicomponent(core:get_ui_root(), "layout", "dropdown_parent_2", "regions_dropdown")
     
@@ -218,7 +173,6 @@ function ui.buildTemplesDropdownUIC()
 
     local capitals = data.getOwnedCapitals()
     if #capitals == 0 then
-        debug("No capitals owned")
         ui.createNoCapitalText(provincesList)
         provincesList:SetVisible(false)
         return uic
@@ -226,8 +180,6 @@ function ui.buildTemplesDropdownUIC()
 
 
     local templesData = data.getTemplesData(capitals)
-    debug("Temples data", templesData)
-
     -- Build each temples section (athena, ares, apollo, ...)
     for key, templeKey in pairs(data.TEMPLE_CHAINS) do
         ui.buildProvinceListSectionForGod(key, templeKey, provincesList, templesData)
@@ -240,8 +192,6 @@ function ui.buildTemplesDropdownUIC()
     return uic
 end
 
-
-
 function ui.buildProvinceListSectionForGod(key, templeKey, provincesList, templesData)
     local templesForGod = templesData[key]
     if not templesForGod then
@@ -249,7 +199,6 @@ function ui.buildProvinceListSectionForGod(key, templeKey, provincesList, temple
         return
     end
     
-    debug("Build ui for", key, templeKey)
     local templeList = UIComponent(provincesList:CopyComponent("mk_ui_" .. templeKey))
     local listTitle = find_uicomponent(templeList, "tx_list_title")
     local ltW, ltH = listTitle:Bounds()
@@ -259,7 +208,6 @@ function ui.buildProvinceListSectionForGod(key, templeKey, provincesList, temple
 
     for i = 1, #templesForGod do
         local temple = templesForGod[i]
-        debug("build row for", temple.province)
         local row = ui.createRowUIC(temple, "mk_ui_" .. templeKey)
         local rW, rH = row:Bounds()
 
@@ -283,10 +231,7 @@ function ui.buildProvinceListSectionForGod(key, templeKey, provincesList, temple
     find_uicomponent(headers, "cycle_button_arrow_right"):SetVisible(false)
     find_uicomponent(headers, "sort_pooled_resource"):SetVisible(false)
 
-    debug("Creating sort btn")
     local sortBtn = ui.createSortButton(headers, templeKey)
-    debug("sort btn created", sortBtn:Id())
-
     return templeList
 end
 
@@ -296,7 +241,6 @@ function ui.buildProvinceListSectionWithoutTemple(provincesList, templesData)
         return
     end
 
-    debug("Build ui for none section")
     local templeKey = "none"
     local templeList = UIComponent(provincesList:CopyComponent("mk_ui_" .. templeKey))
     local listTitle = find_uicomponent(templeList, "tx_list_title")
@@ -308,7 +252,6 @@ function ui.buildProvinceListSectionWithoutTemple(provincesList, templesData)
 
     for i = 1, #templesForGod do
         local temple = templesForGod[i]
-        debug("build row for", temple.province)
         local row = ui.createRowUIC(temple, "mk_ui_" .. templeKey, { hideIncome = true })
         local rW, rH = row:Bounds()
 
@@ -354,7 +297,6 @@ function ui.createNoCapitalText(provincesList)
     return panel
 end
 
-
 function ui.createSortButton(parent, templeKey)
     local sortResource = find_uicomponent(parent, "sort_pooled_resource")
     local sortName = find_uicomponent(parent, "sort_name")
@@ -363,9 +305,6 @@ function ui.createSortButton(parent, templeKey)
 
     local xResource, yResource = sortResource:Position()
     local xName, yName = sortName:Position()
-    debug("createSortButton sortResource x: %d, y: %d", xResource, yResource)
-    debug("createSortButton sortName x: %d, y: %d", xName, yName)
-    debug("createSortButton parent:", templeKey)
 
     local btn = UIComponent(koku:CopyComponent("sort_temple_level"))
     btn:PropagatePriority(parent:Priority())
@@ -375,11 +314,8 @@ function ui.createSortButton(parent, templeKey)
     btn:SetTooltipText("Sort by Building Level", true)
     btn:SetVisible(true)
     btn:SetState("selected_down")
-    
-    debug("createSortButton staate", btn:CurrentState())
 
     local listener = "mk_ui_" .. templeKey .. "_sort_temple_level_click_listener"
-    debug("Register click listener", listener)
     core:remove_listener(listener)
     core:add_listener(
         listener,
@@ -387,7 +323,6 @@ function ui.createSortButton(parent, templeKey)
         function(context) return btn == UIComponent(context.component) end,
         function()
             local state = btn:CurrentState()
-            debug("Clicked on sort, btn state:", state)
 
             local rows = {}
             local list = find_uicomponent(panel, "list_box")
@@ -411,10 +346,7 @@ function ui.createSortButton(parent, templeKey)
                 -- Have to copy the rows to workaround the slider being pulled back to top when all rows are removed
                 -- Can't just Divorce and Readopt after
                 local copy = UIComponent(v:CopyComponent(v:Id()))
-                debug("Sort copy", copy:Id(), copy:GetProperty("province"))
-                
                 local mon = find_uicomponent(v, "mon")
-                debug("mon state", mon:CurrentState())
 
                 find_uicomponent(copy, "mon"):SetState(mon:CurrentState())
                 ui.registerRowClickListener(copy)
@@ -461,7 +393,6 @@ function ui.closeDropdown()
     for k, v in pairs(buttons) do
         local btn = find_uicomponent(core:get_ui_root(), "faction_buttons_docker", v)
         local state = btn:CurrentState()
-        debug("Close dropdown State:", state, "for", v)
         
         if state == "selected" then
             preventDropdownButtonEvent = true
@@ -472,8 +403,6 @@ function ui.closeDropdown()
 end
 
 function ui.onButtonClick()
-    debug("onButtonClick")
-
     if not templesDropdownUIC then
         templesDropdownUIC = ui.buildTemplesDropdownUIC()
     else
@@ -486,7 +415,6 @@ function ui.onButtonClick()
         bottomWidgetUIC:SetVisible(not bottomWidgetUIC:Visible())
     end
 
-    debug("onButtonClick reposition")
     ui.resizeTemplesDropdown()
     ui.repositionTemplesDropdown()
 
@@ -497,8 +425,6 @@ function ui.onButtonClick()
 end
 
 function ui.buildButtonUIC()
-    debug("buildButtonUIC")
-
     local uic = find_uicomponent(core:get_ui_root(), "layout", "faction_buttons_docker", "bar_small_top", "TabGroup", "tab_regions")
     local copy1 = UIComponent(uic:CopyComponent("mk_ui_btn_dummy_01"))
     local copy2 = UIComponent(uic:CopyComponent("mk_ui_btn_dummy_02"))
@@ -521,7 +447,22 @@ function ui.buildButtonUIC()
         listener,
         "ComponentLClickUp",
         function(context) return btn == UIComponent(context.component) end,
-        ui.onButtonClick,
+        function()
+            ui.onButtonClick()
+            if templesDropdownUIC and templesDropdownUIC:Visible() then
+                ui.dockToBottom()
+
+                
+                cm:callback(function()
+                    local x, y = templesDropdownUIC:Position()
+                    local pX, pY = _("layout > dropdown_parent_2 > regions_dropdown"):Position()
+                    if pY ~= y then
+                        debug("Callback dockToBottom different position, redock to bottom")
+                        ui.dockToBottom()
+                    end
+                end, 0.1)
+            end
+        end,
         true
     )
 
@@ -532,14 +473,13 @@ function ui.destroyTemplesDropdown()
     debug("destroyTempleDropdown")
     ui.destroyComponent(templesDropdownUIC)
     templesDropdownUIC = nil
-    debug("destroyTempleDropdown done")
 end
 
 function ui.repositionTemplesDropdown()
     local height = ui.getListBoxHeight()
     if height < HEIGHT_THRESHOLD then
-        debug("repositionTemplesDropdown height below threshold, do nothing", height, HEIGHT_THRESHOLD)
-        --ui.resizeTemplesDropdownHeight(height + 50)
+        debug("repositionTemplesDropdown height below threshold, just dock to bottom", height, HEIGHT_THRESHOLD)
+        -- ui.dockToBottom()
         return
     end
 
@@ -558,20 +498,14 @@ function ui.repositionTemplesDropdown()
     local x, y = regionsDropdown:Position()
     templesDropdownUIC:MoveTo(x ,y)
 
-    debug("Iterate over selectors", selectors)
     for k, v in pairs(selectors) do
         local ref = _("root > layout > dropdown_parent_2 > regions_dropdown > " .. v)
         local x, y = ref:Position()
-        debug("Ref", v, ref:Id(), ref, x, y)
         local uic = _("mk_ui_temples_dropdown > " .. v)
         local x2, y2 = uic:Position()
-        debug("uic to reposition", uic:Id(), x2, y2)
         uic:MoveTo(x, y)
         x2, y2 = uic:Position()
-        debug("new uic position", uic:Id(), x2, y2)
     end
-
-    debug("repositionTemplesDropdown done")
 end
 
 
@@ -581,26 +515,42 @@ function ui.dockToBottom()
         return
     end
 
+    -- debug("Open / close province panel to update its position")
+    -- local tabRegionsBtn = _("layout", "faction_buttons_docker", "tab_regions")
+    -- tabRegionsBtn:SimulateLClick()
+    -- tabRegionsBtn:SimulateLClick()
+
     local x, y = _("mk_ui_dropdown_bottom_widget_stone_base"):Position()
+    local wW, wH = _("mk_ui_dropdown_bottom_widget_stone_base"):Bounds()
     local x2, y2 = templesDropdownUIC:Position()
     local w, h = templesDropdownUIC:Bounds()
-    debug({x,y})
-    debug({x2,y2})
-    debug({w,h})
-    templesDropdownUIC:MoveTo(x2, y - h)
+
+    local pX, pY = _("layout > dropdown_parent_2 > regions_dropdown"):Position()
+    local pW, pH = _("layout > dropdown_parent_2 > regions_dropdown"):Bounds()
+
+    debug("mk_ui_dropdown_bottom_widget_stone_base position:", {x,y})
+    debug("mk_ui_dropdown_bottom_widget_stone_base bounds:", {wW,wH})
+    
+    debug("templesDropdownUIC position:", {x2,y2})
+    debug("templesDropdownUIC bounds:", {w,h})
+    
+    debug("regions_dropdown bounds:", {pX, pY})
+    debug("regions_dropdown bounds:", {pW, pH})
+    
+    debug("Dock to", x2, pY)
+    templesDropdownUIC:MoveTo(x2, pY)
+
+    local x22, y22 = templesDropdownUIC:Position()
+    debug("New position:", x22, y22)
 end
 
 
 function ui.resizeTemplesDropdown()
     local height = ui.getListBoxHeight()
     if height < HEIGHT_THRESHOLD then
-        debug("resizeTemplesDropdown height below threshold, do nothing", height, HEIGHT_THRESHOLD)
-        --ui.resizeTemplesDropdownHeight(height + 50)
         return
     end
-    
 
-    debug("resizeTemplesDropdown")
     local selectors = {
         "panel > panel_clip > listview > list_clip",
         "panel > panel_clip > listview",
@@ -618,46 +568,12 @@ function ui.resizeTemplesDropdown()
         uic:SetCanResizeHeight(true)
 
         local w, h = ref:Bounds()
-        debug("resize", selector, w, h)
         uic:Resize(w, h)
     end
 
     local x, y = _("regions_dropdown > panel > panel_clip > listview > vslider"):Position()
     local x2, y2 = _("mk_ui_temples_dropdown > panel > panel_clip > listview > vslider"):Position()
-    debug("Move slider to", x, y2)
     _("mk_ui_temples_dropdown > panel > panel_clip > listview > vslider"):MoveTo(x, y2)
-end
-
-function ui.resizeTemplesDropdownHeight(height)
-    debug("resizeTemplesDropdown to", height)
-
-    local w, h = _("mk_ui_temples_dropdown > panel > panel_clip"):Bounds()
-    _("mk_ui_temples_dropdown > panel > panel_clip"):Resize(w, height)
-
-    w, h = _("mk_ui_temples_dropdown > panel"):Bounds()
-    _("mk_ui_temples_dropdown > panel"):Resize(w, height)
-
-    w, h = _("mk_ui_temples_dropdown"):Bounds()
-    _("mk_ui_temples_dropdown"):Resize(w, height)
-
-    local title = nil
-    local box = _("mk_ui_temples_dropdown > panel > panel_clip > listview > list_clip > list_box")
-
-    for i = 0, box:ChildCount() - 1 do
-        local child = UIComponent(box:Find(i))
-        local id = child:Id()
-        if id ~= "player_provinces" and id ~= "other_provinces" then
-            title = find_uicomponent(child, "tx_list_title")
-        end
-    end
-
-    if title then
-        local x, y = _("regions_dropdown > panel > panel_clip > listview > vslider"):Position()
-        local x2, y2 = title:Position()
-    
-        local wt, ht = title:Bounds()
-        _("mk_ui_temples_dropdown > panel > panel_clip > listview > vslider"):MoveTo(x, y2 + ht)
-    end
 end
 
 function ui.getListBoxHeight()
@@ -676,10 +592,8 @@ function ui.getListBoxHeight()
 end
 
 function ui.closeTemplesDropdown()
-    debug("closeTemplesDropdown")
     local templeBtn = find_uicomponent(core:get_ui_root(), "mk_ui_btn_temples")
     local state = templeBtn:CurrentState()
-    debug("templeBtn State:", state)
     
     if state == "selected" then
         templeBtn:SimulateLClick()
@@ -692,19 +606,15 @@ function ui.closeTemplesDropdown()
     if bottomWidgetUIC then
         bottomWidgetUIC:SetVisible(false)
     end
-    debug("closeTemplesDropdown done")
 end
 
 function ui.registerDropdownButtonsListeners()
-    debug("registerDropdownButtonsListeners")
     local buttons = DROPDOWN_BUTTONS
-    debug(buttons)
 
     local parent = find_uicomponent(core:get_ui_root(), "layout", "faction_buttons_docker")
     local templeBtn = find_uicomponent(parent, "mk_ui_btn_temples")
 
     for k, v in pairs(buttons) do
-        debug("Register listener for", v)
         local btn = find_uicomponent(parent, v)
 
         local listener = "mk_ui_" .. v .. "_listener"
@@ -714,7 +624,6 @@ function ui.registerDropdownButtonsListeners()
             "ComponentLClickUp",
             function(context) return btn == UIComponent(context.component) and not preventDropdownButtonEvent end,
             function(context)
-                debug("Clicked on", v)
                 ui.closeTemplesDropdown()
             end,
             true
@@ -722,9 +631,24 @@ function ui.registerDropdownButtonsListeners()
     end
 end
 
-function ui.registerUIListeners()
-    debug("registerUIListeners")
+-- root > layout > faction_buttons_docker > end_turn_docker > button_end_turn
+function ui.registerEndTurnButtonListeners()
+    local btn = find_uicomponent(core:get_ui_root(), "layout", "faction_buttons_docker", "end_turn_docker", "button_end_turn")
+    local listener = "mk_ui_end_turn_btn_listener"
 
+    core:remove_listener(listener)
+    core:add_listener(
+        listener,
+        "ComponentLClickUp",
+        function(context) return btn == UIComponent(context.component) end,
+        function(context)
+            ui.closeTemplesDropdown()
+        end,
+        true
+    )
+end
+
+function ui.registerUIListeners()
     local localFaction = cm:get_local_faction()
 
     local listeners = {
@@ -733,7 +657,8 @@ function ui.registerUIListeners()
         PanelClosedCampaign = "mk_ui_PanelClosedCampaign_listener",
         BuildingCompleted = "mk_ui_BuildingCompleted_listener",
         BuildingDemolished = "mk_ui_BuildingDemolished_listener",
-        PanelOpenedCampaignEscMenu = "mk_ui_PanelOpenedCampaignEscMenu_listener"
+        PanelOpenedCampaignEscMenu = "mk_ui_PanelOpenedCampaignEscMenu_listener",
+        CharacterDetailsOpenedCampaign = "mk_ui_PanelOpenedCampaign_character_details_panel_listener",
     }
 
     core:remove_listener(listeners.RegionFactionChangeEvent)
@@ -742,12 +667,12 @@ function ui.registerUIListeners()
     core:remove_listener(listeners.BuildingCompleted)
     core:remove_listener(listeners.BuildingDemolished)
     core:remove_listener(listeners.PanelOpenedCampaignEscMenu)
+    core:remove_listener(listeners.CharacterDetailsOpenedCampaign)
 
     core:add_listener(
         listeners.PanelOpenedCampaignEscMenu,
         "PanelOpenedCampaign",
         function(context)
-            debug("PanelOpenedCampaignEscMenu check", context.string)
             return context.string == "esc_menu_campaign"
         end,
         function(context)
@@ -779,12 +704,26 @@ function ui.registerUIListeners()
         "PanelOpenedCampaign",
         function(context) 
             local panel = context.string
-            debug("PanelOpenedCampaign check", context.string)
-            return panel ~= "units_panel" and panel ~="settlement_panel"
+            return panel ~= "units_panel" and panel ~="settlement_panel" and panel ~= "character_details_panel"
         end,
         function(context)
             debug("PanelOpenedCampaign", context.string)
             ui.closeTemplesDropdown()
+        end,
+        true
+    )
+
+    core:add_listener(
+        listeners.CharacterDetailsOpenedCampaign,
+        "PanelOpenedCampaign",
+        function(context) 
+            local panel = context.string
+            return panel == "character_details_panel"
+        end,
+        function(context)
+            debug("PanelOpenedCampaign CharacterDetailsOpenedCampaign", context.string)
+            ui.closeTemplesDropdown()
+            -- ui.destroyTemplesDropdown()
         end,
         true
     )
@@ -843,9 +782,10 @@ function ui.registerUIListeners()
 end
 
 function ui.build()
-    debug("Build")
+    debug("Build UI")
     ui.buildButtonUIC()
     ui.registerDropdownButtonsListeners()
+    ui.registerEndTurnButtonListeners()
     ui.registerUIListeners()
 end
 
@@ -877,4 +817,5 @@ function ui.init()
     
 end
 
+_G.ui = ui
 return ui

@@ -1,4 +1,4 @@
-local debug = require("tw-debug")("mk:temples:data")
+local debug = require("temples/lib/tw-debug")("mk:temples:data")
 
 local data = {}
 
@@ -10,7 +10,8 @@ local TEMPLE_CHAINS = {
     Athena = "troy_main_religion_athens",
     Hera = "troy_main_religion_hera",
     Poseidon = "troy_main_religion_poseidon",
-    Zeus = "troy_main_religion_zeus"
+    Zeus = "troy_main_religion_zeus",
+    Artemis = "troy_main_religion_artemis"
 }
 
 local function getOwnedCapitals()
