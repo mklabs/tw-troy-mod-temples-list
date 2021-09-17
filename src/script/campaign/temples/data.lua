@@ -11,7 +11,8 @@ local TEMPLE_CHAINS = {
     Hera = "troy_main_religion_hera",
     Poseidon = "troy_main_religion_poseidon",
     Zeus = "troy_main_religion_zeus",
-    Artemis = "troy_main_religion_artemis"
+    Artemis = "troy_main_religion_artemis",
+    Hephaestus = "troy_hep_religion_hephaestus"
 }
 
 local function getOwnedCapitals()
