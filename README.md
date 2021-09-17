@@ -14,6 +14,14 @@ This is a just a script mode, so it should be compatible with everything and sho
 
 ## Install
 
-Download the mod .pack file, and put it into Troy's data folder ( "...Epic Games\TotalWarSagaTROY\data") and it will activate automatically. If you want to deactivate it you will need to move it out of the folder.
+Download from Epic Game Store: https://www.epicgames.com/store/en-US/mods/a-total-war-saga-troy--d1c66ba556a342e8abd2c4379c111b88
 
-Remember to remove the mod when official Troy modding support hits, as you will most likely manage mods through the game launcher.
+Download from Steam Workshop: ...
+
+## Changelog
+
+### 1.2.0 (2021-09-17)
+
+##### New Features
+
+*  Adding hephaestus building to known temple chains ([1994fde9](https://github.com/mklabs/tw-troy-mod-temples-list/commit/1994fde9ed1fcbf9ee2db962b4e0b84e7f2ac2cc))

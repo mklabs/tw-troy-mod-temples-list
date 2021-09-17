@@ -1,0 +1,20 @@
+{
+  "name": "tw-troy-mod-temples-list",
+  "version": "1.1.1",
+  "private": true,
+  "description": "This mod adds a new UI panel to the campaign to list all owned capitals, similar to the provinces list, sorted by the temples you have built. It is useful to manage your gods favor and quickly know where you have built what.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mklabs/tw-troy-mod-temples-list.git"
+  },
+  "author": "mklabs",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/mklabs/tw-troy-mod-temples-list/issues"
+  },
+  "homepage": "https://github.com/mklabs/tw-troy-mod-temples-list#readme"
+}
